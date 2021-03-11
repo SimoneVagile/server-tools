@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 from glob import iglob
 
 from odoo import _, api, exceptions, fields, models, tools
+from odoo.exceptions import UserError
 from odoo.service import db
 
 _logger = logging.getLogger(__name__)
@@ -36,7 +37,9 @@ class DbBackup(models.Model):
     ]
 
     name = fields.Char(
-        compute="_compute_name", store=True, help="Summary of this backup process",
+        compute="_compute_name",
+        store=True,
+        help="Summary of this backup process",
     )
     folder = fields.Char(
         default=lambda self: self._default_folder(),
@@ -131,14 +134,14 @@ class DbBackup(models.Model):
         try:
             # Just open and close the connection
             with self.sftp_connection():
-                raise exceptions.Warning(_("Connection Test Succeeded!"))
+                raise UserError(_("Connection Test Succeeded!"))
         except (
             pysftp.CredentialException,
             pysftp.ConnectionException,
             pysftp.SSHException,
         ):
             _logger.info("Connection Test Failed!", exc_info=True)
-            raise exceptions.Warning(_("Connection Test Failed!"))
+            raise UserError(_("Connection Test Failed!"))
 
     def action_backup(self):
         """Run selected backups."""
@@ -214,7 +217,7 @@ class DbBackup(models.Model):
             self.message_post(  # pylint: disable=translation-required
                 body="<p>%s</p><pre>%s</pre>"
                 % (_("Database backup failed."), escaped_tb),
-                subtype=self.env.ref("auto_backup.mail_message_subtype_failure"),
+                subtype_id=self.env.ref("auto_backup.mail_message_subtype_failure").id,
             )
         else:
             _logger.info("Database backup succeeded: %s", self.name)
@@ -262,7 +265,7 @@ class DbBackup(models.Model):
             self.message_post(  # pylint: disable=translation-required
                 body="<p>%s</p><pre>%s</pre>"
                 % (_("Cleanup of old database backups failed."), escaped_tb),
-                subtype=self.env.ref("auto_backup.failure"),
+                subtype_id=self.env.ref("auto_backup.failure").id,
             )
         else:
             _logger.info("Cleanup of old database backups succeeded: %s", self.name)
