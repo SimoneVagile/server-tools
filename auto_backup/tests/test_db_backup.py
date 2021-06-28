@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta
 from unittest.mock import PropertyMock, patch
 
-from odoo import exceptions, tools
+from odoo import tools
 from odoo.exceptions import UserError
 from odoo.tests import common
 
@@ -57,11 +57,7 @@ class TestDbBackup(common.TransactionCase):
                     yield filtered
 
     def new_record(self, method="sftp"):
-        vals = {
-            "name": u"Têst backup",
-            "method": method,
-            "days_to_keep": 1
-        }
+        vals = {"name": u"Têst backup", "method": method, "days_to_keep": 1}
         if method == "sftp":
             vals.update(
                 {
@@ -69,7 +65,7 @@ class TestDbBackup(common.TransactionCase):
                     "sftp_port": "222",
                     "sftp_user": "tuser",
                     "sftp_password": "password",
-                    "folder": "/folder/"
+                    "folder": "/folder/",
                 }
             )
         self.vals = vals
@@ -134,7 +130,7 @@ class TestDbBackup(common.TransactionCase):
         rec_id = self.new_record("local")
         old_date = datetime.now() - timedelta(days=3)
         filename = rec_id.filename(old_date)
-        with patch('%s.datetime' % model) as mock_date:
+        with patch("%s.datetime" % model) as mock_date:
             mock_date.now.return_value = old_date
             rec_id.action_backup()
         generated_backup = [f for f in os.listdir(rec_id.folder) if f >= filename]
